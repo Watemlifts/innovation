@@ -3,11 +3,10 @@
  run: 
  name: Node.js Package
 
- on:
-  release:
+ release:
     types: [created]
 
-  jobs:
+ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
@@ -59,7 +58,7 @@
   # You may pin to the exact commit or the version.
   # uses: parasoft/deploy-environment-action@486e9382c6c2958fcbaad60b895da799d16730c2
     uses: parasoft/deploy-environment-action@1.0.2
-with:
+ with:
     # CTP URL
     ctpUrl: 
     # CTP Username
@@ -104,8 +103,8 @@ with:
                       - name: Cloud Maker Deploy
   # You may pin to the exact commit or the version.
   # uses: cloud-maker-ai/github-action-deploy@f86239fb28b589a9898a361b3df1dac5f3d3fc8f
-    uses: cloud-maker-ai/github-action-deploy@v1.0.1
-    with:
+ uses: cloud-maker-ai/github-action-deploy@v1.0.1
+  with:
     # Cloud Maker API Token
     CLOUD_MAKER_TOKEN: 
     # Cloud Maker Pipeline ID to be deployed
