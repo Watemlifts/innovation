@@ -1,22 +1,26 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
+name: Node.js Package
 
-# For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
- run: 
- name: Node.js Package
-
- release:
+on:
+  release:
     types: [created]
 
- jobs:
+jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - run: npm test
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
 
   publish-gpr:
     needs: build
@@ -25,167 +29,115 @@
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://npm.pkg.github.com/
-      - run: npm ci
-      - run: npm publish
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish package
+        run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            - name:Cache
-  uses: actions/cache@v4.2.0
-  with:
-    # A list of files, directories, and wildcard patterns to cache and restore
-    path: 
-    # An explicit key for restoring and saving the cache
-    key: 
-    # An ordered multiline string listing the prefix-matched keys, that are used for restoring stale cache if no cache hit occurred for key. Note `cache-hit` returns false in this case.
-    restore-keys: # optional
-    # The chunk size used to split up large files during upload, in bytes
-    upload-chunk-size: # optional
-    # An optional boolean when enabled, allows windows runners to save or restore caches that can be restored or saved respectively on other platforms
-    enableCrossOsArchive: # optional, default is false
-    # Fail the workflow if cache entry is not found
-    fail-on-cache-miss: # optional, default is false
-    # Check if a cache entry exists for the given input(s) (key, restore-keys) without downloading the cache
-    lookup-only: # optional, default is false
-    # Run the post step to save the cache even if another step before fails
-    save-always: # optional, default is false
+  cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
-                      - name: Deploy Environment
-  # You may pin to the exact commit or the version.
-  # uses: parasoft/deploy-environment-action@486e9382c6c2958fcbaad60b895da799d16730c2
-    uses: parasoft/deploy-environment-action@1.0.2
- with:
-    # CTP URL
-    ctpUrl: 
-    # CTP Username
-    ctpUsername: 
-    # CTP Password
-    ctpPassword: 
-    # Name of the system
-    system: 
-    # Name of the environment
-    environment: 
-    # Name of the environment instance to provision
-    instance: 
-    # Fail action and abort on provisioning failure
-    abortOnFailure: # optional
-    # Virtual assets in the environment will be replicated on another server
-    copyToVirtualize: # optional
-    # The environment assets will be copied to a Virtualize server matching this name
-    virtServerName: # optional
-    # The name for the replicated environment can be used to later destroy the environment
-    newEnvironmentName: # optional
-    # Duplicate associated data repositories before provisioning
-    duplicateDataRepo: # optional
-    # Where to duplicate data repository
-    duplicateType: # optional
-    # The host of the data repository server
-    repoHost: # optional
-    # The port of the data repository server
-    repoPort: # optional
-    # The username of the data repository server
-    repoUsername: # optional
-    # The password of the data repository server
-    repoPassword: # optional
+  deploy-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Environment
+        uses: parasoft/deploy-environment-action@1.0.2
+        with:
+          ctpUrl: ${{ secrets.CTP_URL }}
+          ctpUsername: ${{ secrets.CTP_USERNAME }}
+          ctpPassword: ${{ secrets.CTP_PASSWORD }}
+          system: ${{ secrets.SYSTEM }}
+          environment: ${{ secrets.ENVIRONMENT }}
+          instance: ${{ secrets.INSTANCE }}
 
-                      - name: ServiceNow CI/CD Activate Plugin
-  # You may pin to the exact commit or the version.
-  # uses: ServiceNow/sncicd-plugin-activate@a12a95b41b8e026f9107d0c38f22245a5f4cf8d7
-    uses: ServiceNow/sncicd-plugin-activate@2.0.0
-    with:
-    # Plugin ID to be installed
-    pluginID: 
+  servicenow-plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ServiceNow CI/CD Activate Plugin
+        uses: ServiceNow/sncicd-plugin-activate@2.0.0
+        with:
+          pluginID: ${{ secrets.PLUGIN_ID }}
 
-                      - name: Cloud Maker Deploy
-  # You may pin to the exact commit or the version.
-  # uses: cloud-maker-ai/github-action-deploy@f86239fb28b589a9898a361b3df1dac5f3d3fc8f
-  uses: cloud-maker-ai/github-action-deploy@v1.0.1
-  with:
-    # Cloud Maker API Token
-    CLOUD_MAKER_TOKEN: 
-    # Cloud Maker Pipeline ID to be deployed
-    CLOUD_MAKER_PIPELINE_ID: 
-    # Cloud Maker Stage ID to be deployed
-    CLOUD_MAKER_STAGE_ID: 
+  cloud-maker-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cloud Maker Deploy
+        uses: cloud-maker-ai/github-action-deploy@v1.0.1
+        with:
+          CLOUD_MAKER_TOKEN: ${{ secrets.CLOUD_MAKER_TOKEN }}
+          CLOUD_MAKER_PIPELINE_ID: ${{ secrets.CLOUD_MAKER_PIPELINE_ID }}
+          CLOUD_MAKER_STAGE_ID: ${{ secrets.CLOUD_MAKER_STAGE_ID }}
 
-                      - name: Yor GitHub Action
-  # You may pin to the exact commit or the version.
-  # uses: bridgecrewio/yor-action@04bf3da0c4e8619a307c023ce8f0d196a2d8a4ee
-  uses: bridgecrewio/yor-action@0.3.0
-  with:
-    # directory with infrastructure code to scan
-    directory: # optional, default is .
-    # Run scan on all checks but a specific check identifier (comma separated)
-    tag_groups: # optional
-    # comma delimited list of yor tags to apply
-    tag: # optional
-    # comma delimited list of yor tags to not apply
-    skip_tags: # optional
-    # comma delimited list of paths for yor to skip tagging of
-    skip_dirs: # optional
-    # comma delimited list of paths to external (custom) tags & tag groups plugins
-    custom_tags: # optional
-    # The format of the output. cli, json
-    output_format: # optional
-    # log level
-    log_level: # optional
-    # Choose whether the action will commit changes. Changes will be commited if this is exactly "YES"
-    commit_changes: # optional, default is true
+  yor-action:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Yor GitHub Action
+        uses: bridgecrewio/yor-action@0.3.0
+        with:
+          directory: .
+          tag_groups: ${{ secrets.TAG_GROUPS }}
+          tag: ${{ secrets.TAG }}
+          skip_tags: ${{ secrets.SKIP_TAGS }}
+          skip_dirs: ${{ secrets.SKIP_DIRS }}
+          custom_tags: ${{ secrets.CUSTOM_TAGS }}
+          output_format: json
+          log_level: info
+          commit_changes: true
 
-                      - name: Rational Integration Tester GitHub Action
-  # You may pin to the exact commit or the version.
-  # uses: IBM/devopsauto-integrtest-actions@5096cad49a7c728d0de5931481f5567254c70a70
-  uses: IBM/devopsauto-integrtest-actions@v1
-  with:
-    # The fully qualified path to Rational Integration Tester project directory. This value will be ignored if parameterFile field is used.
-    projectDir: 
-    # The name of the API test project. This value will be ignored if parameterFile field is used.
-    projectName: 
-    # The API Test environment to use for this execution. This value will be ignored if parameterFile field is used.
-    environment: 
-    # Semicolon separated list of tests/suites to run. This value will be ignored if parameterFile field is used.
-    tests: 
-    # The fully qualified path to a parameter file that contains project, environment, and run arguments for one or more tests.
-    parameterFile: # optional
-    # Specify the folder to export the JUnit reports to.
-    junitDir: # optional
+  rational-integration-tester:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rational Integration Tester
+        uses: IBM/devopsauto-integrtest-actions@v1
+        with:
+          projectDir: ${{ secrets.PROJECT_DIR }}
+          projectName: ${{ secrets.PROJECT_NAME }}
+          environment: ${{ secrets.ENVIRONMENT }}
+          tests: ${{ secrets.TESTS }}
+          parameterFile: ${{ secrets.PARAMETER_FILE }}
+          junitDir: ${{ secrets.JUNIT_DIR }}
 
-                      - name: Scheduled Milestones
-  # You may pin to the exact commit or the version.
-  # uses: readmeio/scheduled-milestones@0e87deaf0083675156111def24b8a29a97aa6fb1
-  uses: readmeio/scheduled-milestones@v1.0.0
-  with:
-    # GitHub authentication token
-    token: 
-    # A prefix for your scheduled milestone title.
-    title: # default is Up for Review
-    # A comma-separated list of the days of the upcoming week that you want milestones for.
-    days: 
-    # Options for `Date.toLocaleDateString()`. See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleDateString for details.
-    date_options: # optional
+  scheduled-milestones:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scheduled Milestones
+        uses: readmeio/scheduled-milestones@v1.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: Up for Review
+          days: Monday,Wednesday,Friday
+          date_options: '{"weekday": "long", "year": "numeric", "month": "long", "day": "numeric"}'
 
-                      - name: Teamwork GitHub Sync
-  # You may pin to the exact commit or the version.
-  # uses: Teamwork/github-sync@42dcac69eb5a41fad0d518efeb6aecf1e45f8d01
-  uses: Teamwork/github-sync@v1.3.3
-  with:
-    # GitHub token
-    GITHUB_TOKEN: 
-    # Teamwork URI
-    TEAMWORK_URI: 
-    # Teamwork API token
-    TEAMWORK_API_TOKEN: 
-    # Do you want to enable automatic tagging: true/false
-    AUTOMATIC_TAGGING: # optional
-    # The case-sensitive column name of the column you would like the task to be moved to once the PR has been opened
-    BOARD_COLUMN_OPENED: # optional, default is 
-    # The case-sensitive column name of the column you would like the task to be moved to once the PR has been merged
-    BOARD_COLUMN_MERGED: # optional, default is 
-    # The case-sensitive column name of the column you would like the task to be moved to if the PR was closed without being merged
-    BOARD_COLUMN_CLOSED: # optional, default is 
-          
+  teamwork-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Teamwork GitHub Sync
+        uses: Teamwork/github-sync@v1.3.3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEAMWORK_URI: ${{ secrets.TEAMWORK_URI }}
+          TEAMWORK_API_TOKEN: ${{ secrets.TEAMWORK_API_TOKEN }}
+          AUTOMATIC_TAGGING: true
+          BOARD_COLUMN_OPENED: In Progress
+          BOARD_COLUMN_MERGED: Done
+          BOARD_COLUMN_CLOSED: Closed
